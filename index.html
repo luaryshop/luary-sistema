@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>LUARY • Sistema Premium</title>
+<title>LUARY • Sistema Profissional</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -11,18 +11,20 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 
 <style>
-body{background:#0b0b0b;color:white}
+body{background:#0b0b0b;color:white;font-family:Arial}
 .card{background:#111;border-radius:20px;padding:20px}
 </style>
 </head>
 
 <body class="p-6">
 
-<a href="editor.html" class="text-[#caa85c]">→ Editor</a>
+<h1 class="text-4xl font-bold mb-8 text-[#caa85c]">LUARY • PRECIFICAÇÃO</h1>
 
-<h1 class="text-4xl font-bold mb-8">LUARY DASHBOARD</h1>
+<input id="busca" placeholder="Buscar produto..." class="p-3 w-full mb-6 bg-black border">
 
-<div id="produtos" class="grid grid-cols-3 gap-6"></div>
+<div id="listaBusca" class="mb-10"></div>
+
+<div id="resultado"></div>
 
 <script>
 const firebaseConfig = {
@@ -34,28 +36,111 @@ projectId: "catalogo-abella-joias"
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-
 firebase.auth().signInAnonymously();
 
-db.ref('luary_produtos').on('value',snap=>{
+let produtos=[], insumos=[], banhos=[], canais=[];
+
+// 🔥 LOAD TUDO
+db.ref('luary_produtos').on('value',s=>{
+produtos = map(s);
+});
+db.ref('luary_insumos').on('value',s=>{
+insumos = map(s);
+});
+db.ref('luary_banhos').on('value',s=>{
+banhos = map(s);
+});
+db.ref('luary_marketplaces').on('value',s=>{
+canais = map(s);
+});
+
+function map(snap){
+let arr=[];
+snap.forEach(c=>{
+arr.push({id:c.key,...c.val()});
+});
+return arr;
+}
+
+// 🔎 BUSCA
+document.getElementById('busca').oninput = function(){
+const q = this.value.toLowerCase();
 
 let html='';
 
-snap.forEach(c=>{
-const p=c.val();
-
+produtos
+.filter(p => p.nome?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q))
+.forEach(p=>{
 html+=`
-<div class="card hover:scale-105 transition">
-<img src="${p.foto||''}" class="w-full h-40 object-cover rounded mb-4">
-<h2 class="text-lg font-bold">${p.nome}</h2>
-<p class="text-sm text-gray-400">${p.sku}</p>
-<p class="text-green-400 mt-2">R$ ${Number(p.custoBase||0).toFixed(2)}</p>
+<div onclick="calcular('${p.id}')" class="card mb-2 cursor-pointer hover:bg-[#1a1a1a]">
+${p.nome} (${p.sku})
 </div>`;
 });
 
-document.getElementById('produtos').innerHTML=html;
+document.getElementById('listaBusca').innerHTML = html;
+};
+
+// 🧠 CALCULO COMPLETO
+function calcular(id){
+
+const p = produtos.find(x=>x.id===id);
+if(!p) return;
+
+// INSUMOS
+const usados = insumos.filter(i=> (p.insumosIds||[]).includes(i.id));
+
+const custoInsumos = usados.reduce((t,i)=>t+Number(i.custo||0),0);
+
+// PESO BANHO
+let peso = Number(p.pesoBase||0);
+
+usados.forEach(i=>{
+if(i.somarAoBanho) peso += Number(i.peso||0);
+});
+
+// BANHO
+const banho = banhos.find(b=>b.id===p.banhoId);
+const custoBanho = peso * Number(banho?.precoPorGrama||0);
+
+// TOTAL
+const custoTotal = Number(p.custoBase||0) + custoInsumos + custoBanho;
+
+// CANAIS
+let html = `
+<div class="card mb-6">
+<h2 class="text-2xl">${p.nome}</h2>
+<p>Custo total: R$ ${custoTotal.toFixed(2)}</p>
+</div>
+`;
+
+canais.forEach(c=>{
+
+const taxa = (Number(c.comissao||0)+Number(c.imposto||0)+Number(c.ads||0))/100;
+const fixo = Number(c.taxaFixa||0)+Number(c.freteMedia||0);
+
+let preco=0;
+
+if(p.tipoMargem==="valor"){
+preco = (custoTotal + fixo + Number(p.margemAlvo||0))/(1-taxa);
+}else{
+preco = (custoTotal + fixo)/(1 - taxa - (Number(p.margemAlvo||0)/100));
+}
+
+const lucro = preco - (preco*taxa) - custoTotal - fixo;
+
+html+=`
+<div class="card mb-4">
+<h3 class="text-xl">${c.nome}</h3>
+<p>Preço sugerido: R$ ${preco.toFixed(2)}</p>
+<p class="text-green-400">Lucro: R$ ${lucro.toFixed(2)}</p>
+</div>
+`;
 
 });
+
+document.getElementById('resultado').innerHTML = html;
+
+}
 </script>
 
 </body>
