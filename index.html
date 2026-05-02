@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Luary - Precificação</title>
+<title>Precificador LUARY</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -10,23 +10,35 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 
+<style>
+body{background:#0b0b0b;color:white}
+.card{background:#111;border-radius:20px;padding:20px}
+</style>
 </head>
 
-<body class="bg-slate-100 p-8">
+<body class="p-6">
 
-<h1 class="text-3xl font-black mb-6">PRECIFICADOR LUARY</h1>
+<h1 class="text-3xl font-bold mb-4">PRECIFICAÇÃO</h1>
+<p class="text-green-400 text-sm mb-6">● Sincronização ativa</p>
 
-<input id="busca" placeholder="Buscar produto..."
-class="w-full p-4 rounded-xl border mb-6"/>
+<!-- BUSCA -->
+<input id="busca" placeholder="Buscar por nome ou SKU..."
+class="w-full p-3 rounded bg-black border mb-6"/>
 
-<div id="resultado"></div>
-<div id="canais" class="grid grid-cols-3 gap-6 mt-6"></div>
+<!-- RESULTADOS -->
+<div id="listaBusca" class="mb-6"></div>
+
+<!-- PRODUTO -->
+<div id="produto"></div>
+
+<!-- CANAIS -->
+<div id="canais" class="grid md:grid-cols-2 gap-4 mt-6"></div>
 
 <script>
 const firebaseConfig = {
-  apiKey: "SUA_KEY",
+  apiKey: "AIza...",
   authDomain: "catalogo-abella-joias.firebaseapp.com",
-  databaseURL: "https://catalogo-abella-joias-default-rtdb.firebaseio.com"
+  databaseURL: "https://catalogo-abella-joias-default-rtdb.firebaseio.com",
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -34,80 +46,129 @@ const db = firebase.database();
 firebase.auth().signInAnonymously();
 
 let produtos=[], insumos=[], banhos=[], canais=[];
+let selecionado=null;
 
-function sync(path, setter){
-  db.ref(path).on('value', snap=>{
-    const data = snap.val() || {};
-    setter(Object.keys(data).map(id=>({id,...data[id]})));
-  });
-}
-
-sync('luary_produtos', v=>produtos=v);
-sync('luary_insumos', v=>insumos=v);
-sync('luary_banhos', v=>banhos=v);
-sync('luary_marketplaces', v=>canais=v);
-
-document.getElementById('busca').oninput = e=>{
-  const q = e.target.value.toLowerCase();
-  const p = produtos.find(x =>
-    x.nome?.toLowerCase().includes(q) ||
-    x.sku?.toLowerCase().includes(q)
-  );
-  if(p) calcular(p);
-};
-
-function calcular(p){
-
-const pInsumos = (p.insumosIds||[])
-.map(id=>insumos.find(i=>i.id==id))
-.filter(Boolean);
-
-const custoInsumos = pInsumos.reduce((a,i)=>a+Number(i.custo||0),0);
-
-const pesoBanho = Number(p.pesoBase||0) +
-pInsumos.filter(i=>i.somarAoBanho)
-.reduce((a,i)=>a+Number(i.peso||0),0);
-
-const banho = banhos.find(b=>b.id==p.banhoId);
-const custoBanho = pesoBanho * Number(banho?.precoPorGrama||0);
-
-const custoTotal = Number(p.custoBase||0) + custoInsumos + custoBanho;
-
-document.getElementById('resultado').innerHTML = `
-<div class="bg-white p-6 rounded-xl shadow">
-<img src="${p.foto||''}" class="w-full h-60 object-cover rounded mb-4"/>
-<h2 class="text-xl font-bold">${p.nome}</h2>
-<p>SKU: ${p.sku}</p>
-<p class="mt-2 font-bold">Custo Total: R$ ${custoTotal.toFixed(2)}</p>
-</div>
-`;
-
-let html = '';
-
-canais.forEach(m=>{
-const taxa = (m.comissao+m.ads+m.imposto)/100;
-const fixo = Number(m.taxaFixa||0) + Number(m.freteMedia||0);
-
-let preco = 0;
-
-if(p.tipoMargem=='valor'){
-preco = (custoTotal + fixo + Number(p.margemAlvo)) / (1 - taxa);
-}else{
-preco = (custoTotal + fixo) / (1 - taxa - (p.margemAlvo/100));
-}
-
-const lucro = preco - (preco*taxa) - custoTotal - fixo;
-
-html += `
-<div class="bg-white p-6 rounded-xl shadow">
-<h3 class="font-bold">${m.nome}</h3>
-<p>Preço: R$ ${preco.toFixed(2)}</p>
-<p class="text-green-600 font-bold">Lucro: R$ ${lucro.toFixed(2)}</p>
-</div>
-`;
+// 🔄 LOAD DADOS
+db.ref('luary_produtos').on('value',s=>{
+  produtos=[];
+  s.forEach(c=>produtos.push({id:c.key,...c.val()}));
 });
 
-document.getElementById('canais').innerHTML = html;
+db.ref('luary_insumos').on('value',s=>{
+  insumos=[];
+  s.forEach(c=>insumos.push({id:c.key,...c.val()}));
+});
+
+db.ref('luary_banhos').on('value',s=>{
+  banhos=[];
+  s.forEach(c=>banhos.push({id:c.key,...c.val()}));
+});
+
+db.ref('luary_marketplaces').on('value',s=>{
+  canais=[];
+  s.forEach(c=>canais.push({id:c.key,...c.val()}));
+});
+
+// 🔍 BUSCA
+document.getElementById('busca').oninput = function(){
+  const v=this.value.toLowerCase();
+
+  const res=produtos
+  .filter(p=>p.nome?.toLowerCase().includes(v) || p.sku?.toLowerCase().includes(v))
+  .sort((a,b)=>a.sku?.localeCompare(b.sku));
+
+  let html='';
+  res.forEach(p=>{
+    html+=`
+    <div onclick="select('${p.id}')" class="p-3 bg-[#111] rounded mb-2 cursor-pointer hover:bg-[#222]">
+      <b>${p.sku}</b> - ${p.nome}
+    </div>`;
+  });
+
+  document.getElementById('listaBusca').innerHTML=html;
+}
+
+function select(id){
+  selecionado=produtos.find(p=>p.id==id);
+  render();
+}
+
+// 🧠 CALCULO
+function render(){
+  if(!selecionado) return;
+
+  const p=selecionado;
+
+  const pInsumos=(p.insumosIds||[]).map(id=>insumos.find(i=>i.id==id)).filter(Boolean);
+  const custoInsumos=pInsumos.reduce((a,i)=>a+Number(i.custo||0),0);
+
+  const pesoBanho = Number(p.pesoBase||0) +
+    pInsumos.filter(i=>i.somarAoBanho).reduce((a,i)=>a+Number(i.peso||0),0);
+
+  const banho = banhos.find(b=>b.id==p.banhoId);
+  const custoBanho = pesoBanho * Number(banho?.precoPorGrama||0);
+
+  const custoTotal = Number(p.custoBase||0)+custoInsumos+custoBanho;
+
+  // 🧾 CARD PRODUTO
+  document.getElementById('produto').innerHTML=`
+  <div class="card max-w-md mx-auto text-center">
+    
+    <img src="${p.foto||''}" class="w-full aspect-square object-cover rounded mb-4"/>
+
+    <h2 class="text-xl font-bold">${p.nome}</h2>
+    <p class="text-gray-400">${p.sku}</p>
+
+    <div class="mt-6 text-left space-y-2">
+
+      <p>Peça Base: <b>R$ ${Number(p.custoBase||0).toFixed(2)}</b></p>
+      <p>Insumos: <b>R$ ${custoInsumos.toFixed(2)}</b></p>
+      <p>Banho: <b>R$ ${custoBanho.toFixed(2)}</b></p>
+
+      <hr class="border-gray-700">
+
+      <p class="text-lg">Total: <b>R$ ${custoTotal.toFixed(2)}</b></p>
+      <p>Peso envio: <b>${pesoBanho.toFixed(2)}g</b></p>
+
+    </div>
+  </div>
+  `;
+
+  // 🏪 CANAIS
+  let html='';
+
+  canais.forEach(m=>{
+    const taxa=(m.comissao+m.ads+m.imposto)/100;
+    const fixo=m.taxaFixa+m.freteMedia;
+
+    let preco=0;
+
+    if(p.tipoMargem==='valor'){
+      preco=(custoTotal+fixo+Number(p.margemAlvo))/(1-taxa);
+    }else{
+      preco=(custoTotal+fixo)/(1-taxa-(p.margemAlvo/100));
+    }
+
+    const lucro=preco-(preco*taxa)-custoTotal-fixo;
+
+    html+=`
+    <div class="card">
+      
+      <h3 class="text-lg font-bold mb-2">${m.nome}</h3>
+
+      <p>Comissão: ${m.comissao}%</p>
+      <p>ADS: ${m.ads}%</p>
+
+      <div class="mt-3">
+        <p class="text-green-400 text-xl">R$ ${preco.toFixed(2)}</p>
+        <p class="text-sm">Lucro: R$ ${lucro.toFixed(2)}</p>
+      </div>
+
+    </div>
+    `;
+  });
+
+  document.getElementById('canais').innerHTML=html;
 }
 </script>
 
