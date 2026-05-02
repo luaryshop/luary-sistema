@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Editor LUARY</title>
+<title>LUARY • Editor Premium</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -13,122 +13,87 @@
 
 <style>
 body{background:#0b0b0b;color:white}
-.input{background:#1a1a1a;border:1px solid #333;padding:6px;width:100%}
-img{width:40px;height:40px;object-fit:cover}
+.card{background:#111;border-radius:16px;padding:16px}
 </style>
 </head>
 
-<body class="p-4">
+<body class="p-6">
 
-<a href="index.html">← Simulador</a>
+<h1 class="text-3xl font-bold mb-6 text-[#caa85c]">EDITOR LUARY</h1>
 
-<h1 class="text-xl mb-4">EDITOR LUARY</h1>
+<div class="card mb-6">
+<input id="nome" placeholder="Nome" class="w-full mb-2 p-2 bg-black border">
+<input id="sku" placeholder="SKU" class="w-full mb-2 p-2 bg-black border">
+<input id="custo" placeholder="Custo" type="number" class="w-full mb-2 p-2 bg-black border">
 
-<button onclick="novo()" class="bg-white text-black px-4 py-2 mb-4">+ NOVO PRODUTO</button>
+<input type="file" id="foto" class="mb-4">
 
-<table class="w-full text-xs">
-<thead>
-<tr>
-<th>IMG</th>
-<th>SKU</th>
-<th>Nome</th>
-<th>Custo</th>
-<th>Peso</th>
-<th>Ações</th>
-</tr>
-</thead>
-<tbody id="tb"></tbody>
-</table>
+<button onclick="salvar()" class="bg-green-600 px-6 py-2">SALVAR</button>
+</div>
+
+<div id="lista"></div>
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyDPBZSxW8XjtQmDMUknzAyIlFda51MvMJY",
-  authDomain: "catalogo-abella-joias.firebaseapp.com",
-  databaseURL: "https://catalogo-abella-joias-default-rtdb.firebaseio.com",
-  projectId: "catalogo-abella-joias",
-  storageBucket: "catalogo-abella-joias.firebasestorage.app",
-  messagingSenderId: "727568435294",
-  appId: "1:727568435294:web:442c0179ecf0686dff4ccf"
+apiKey: "AIzaSyDP...",
+authDomain: "catalogo-abella-joias.firebaseapp.com",
+databaseURL: "https://catalogo-abella-joias-default-rtdb.firebaseio.com",
+projectId: "catalogo-abella-joias",
+storageBucket: "catalogo-abella-joias.firebasestorage.app"
 };
 
 firebase.initializeApp(firebaseConfig);
+
 const db = firebase.database();
 const storage = firebase.storage();
-const auth = firebase.auth();
+firebase.auth().signInAnonymously();
 
-auth.signInAnonymously();
-
-function linha(id,p={}) {
-return `
-<tr data-id="${id}">
-<td>
-<img src="${p.foto||''}">
-<input type="file" onchange="upload(this)">
-</td>
-<td><input class="input sku" value="${p.sku||''}"></td>
-<td><input class="input nome" value="${p.nome||''}"></td>
-<td><input class="input custo" value="${p.custoBase||0}"></td>
-<td><input class="input peso" value="${p.pesoBase||0}"></td>
-<td>
-<button onclick="salvar(this)">💾</button>
-<button onclick="del('${id}')">🗑️</button>
-</td>
-</tr>`;
+async function uploadImagem(file){
+const ref = storage.ref('luary/produtos/'+Date.now());
+await ref.put(file);
+return await ref.getDownloadURL();
 }
 
-function novo(){
-const ref = db.ref('luary_produtos').push();
-document.getElementById('tb').insertAdjacentHTML('afterbegin',linha(ref.key,{}));
+async function salvar(){
+
+const nome = document.getElementById('nome').value;
+const sku = document.getElementById('sku').value;
+const custo = Number(document.getElementById('custo').value);
+const file = document.getElementById('foto').files[0];
+
+let url = '';
+
+if(file){
+url = await uploadImagem(file);
 }
 
-function carregar(){
+const id = crypto.randomUUID();
+
+await db.ref('luary_produtos/'+id).set({
+nome, sku, custoBase:custo, foto:url
+});
+
+alert("Salvo!");
+}
+
 db.ref('luary_produtos').on('value',snap=>{
 let html='';
+
 snap.forEach(c=>{
-html+=linha(c.key,c.val());
+const p=c.val();
+
+html+=`
+<div class="card mb-3 flex gap-4 items-center">
+<img src="${p.foto||''}" class="w-16 h-16 object-cover bg-black">
+<div>
+<p>${p.nome}</p>
+<p class="text-xs text-gray-400">${p.sku}</p>
+</div>
+</div>`;
 });
-document.getElementById('tb').innerHTML=html;
+
+document.getElementById('lista').innerHTML=html;
 });
-}
-
-async function upload(input){
-const file = input.files[0];
-if(!file) return;
-
-const tr = input.closest('tr');
-const id = tr.dataset.id;
-
-const ref = storage.ref(`LuaryShop/produtos/${id}_${file.name}`);
-
-await ref.put(file);
-const url = await ref.getDownloadURL();
-
-tr.querySelector('img').src = url;
-await db.ref('luary_produtos/'+id+'/foto').set(url);
-}
-
-function salvar(btn){
-const tr = btn.closest('tr');
-const id = tr.dataset.id;
-
-const data = {
-sku: tr.querySelector('.sku').value,
-nome: tr.querySelector('.nome').value,
-custoBase: Number(tr.querySelector('.custo').value),
-pesoBase: Number(tr.querySelector('.peso').value),
-foto: tr.querySelector('img').src || ''
-};
-
-db.ref('luary_produtos/'+id).update(data);
-}
-
-function del(id){
-if(confirm("Excluir?")){
-db.ref('luary_produtos/'+id).remove();
-}
-}
-
-carregar();
 </script>
 
 </body>
