@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Simulador LUARY</title>
+<title>LUARY • Sistema Premium</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -12,77 +12,50 @@
 
 <style>
 body{background:#0b0b0b;color:white}
+.card{background:#111;border-radius:20px;padding:20px}
 </style>
 </head>
 
 <body class="p-6">
 
-<a href="editor.html">→ Ir para Editor</a>
+<a href="editor.html" class="text-[#caa85c]">→ Editor</a>
 
-<h1 class="text-2xl mb-6">SIMULADOR LUARY</h1>
+<h1 class="text-4xl font-bold mb-8">LUARY DASHBOARD</h1>
 
-<select id="produtos" class="bg-black border p-2 mb-4"></select>
-
-<div id="resultado"></div>
+<div id="produtos" class="grid grid-cols-3 gap-6"></div>
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyDPBZSxW8XjtQmDMUknzAyIlFda51MvMJY",
-  authDomain: "catalogo-abella-joias.firebaseapp.com",
-  databaseURL: "https://catalogo-abella-joias-default-rtdb.firebaseio.com",
-  projectId: "catalogo-abella-joias",
-  storageBucket: "catalogo-abella-joias.firebasestorage.app",
-  messagingSenderId: "727568435294",
-  appId: "1:727568435294:web:442c0179ecf0686dff4ccf"
+apiKey: "AIzaSyDP...",
+authDomain: "catalogo-abella-joias.firebaseapp.com",
+databaseURL: "https://catalogo-abella-joias-default-rtdb.firebaseio.com",
+projectId: "catalogo-abella-joias"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const auth = firebase.auth();
 
-auth.signInAnonymously();
-
-let produtos = [];
+firebase.auth().signInAnonymously();
 
 db.ref('luary_produtos').on('value',snap=>{
-produtos=[];
-let select=document.getElementById('produtos');
-select.innerHTML='';
+
+let html='';
 
 snap.forEach(c=>{
-const p = c.val();
-produtos.push(p);
+const p=c.val();
 
-const opt=document.createElement('option');
-opt.value=c.key;
-opt.text=p.nome;
-select.appendChild(opt);
+html+=`
+<div class="card hover:scale-105 transition">
+<img src="${p.foto||''}" class="w-full h-40 object-cover rounded mb-4">
+<h2 class="text-lg font-bold">${p.nome}</h2>
+<p class="text-sm text-gray-400">${p.sku}</p>
+<p class="text-green-400 mt-2">R$ ${Number(p.custoBase||0).toFixed(2)}</p>
+</div>`;
 });
 
-calcular();
+document.getElementById('produtos').innerHTML=html;
+
 });
-
-document.getElementById('produtos').onchange = calcular;
-
-function calcular(){
-const id=document.getElementById('produtos').value;
-const p=produtos.find(x=>x.nome && x);
-
-if(!p) return;
-
-const custo = Number(p.custoBase||0);
-const margem = 2;
-
-const preco = custo * margem;
-
-document.getElementById('resultado').innerHTML=`
-<div class="mt-4 p-4 bg-[#111] rounded">
-<p>Produto: ${p.nome}</p>
-<p>Custo: R$ ${custo.toFixed(2)}</p>
-<p>Preço sugerido: R$ ${preco.toFixed(2)}</p>
-</div>
-`;
-}
 </script>
 
 </body>
