@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Luary Sistema</title>
+<title>Luary - Precificação</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -10,44 +10,21 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 
-<style>
-body { background:#0f172a; }
-.card { @apply bg-white rounded-3xl p-6 shadow-lg; }
-</style>
 </head>
 
-<body class="flex h-screen text-slate-800">
+<body class="bg-slate-100 p-8">
 
-<!-- SIDEBAR -->
-<div class="w-72 bg-white p-6 flex flex-col gap-6">
-  <h1 class="text-2xl font-black">LUARY <span class="text-indigo-600">SHOP</span></h1>
-
-  <button onclick="trocar('dashboard')" class="btn">Dashboard</button>
-  <button onclick="trocar('produtos')" class="btn">Produtos</button>
-</div>
-
-<!-- MAIN -->
-<div class="flex-1 p-8 overflow-auto">
-
-<!-- DASHBOARD -->
-<div id="dashboard">
-
-<h2 class="text-3xl font-black mb-6">Simulador</h2>
+<h1 class="text-3xl font-black mb-6">PRECIFICADOR LUARY</h1>
 
 <input id="busca" placeholder="Buscar produto..."
-class="w-full p-4 rounded-xl mb-6 border"/>
+class="w-full p-4 rounded-xl border mb-6"/>
 
 <div id="resultado"></div>
-
 <div id="canais" class="grid grid-cols-3 gap-6 mt-6"></div>
-
-</div>
-
-</div>
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
+  apiKey: "SUA_KEY",
   authDomain: "catalogo-abella-joias.firebaseapp.com",
   databaseURL: "https://catalogo-abella-joias-default-rtdb.firebaseio.com"
 };
@@ -72,18 +49,24 @@ sync('luary_marketplaces', v=>canais=v);
 
 document.getElementById('busca').oninput = e=>{
   const q = e.target.value.toLowerCase();
-  const p = produtos.find(x => x.nome?.toLowerCase().includes(q));
+  const p = produtos.find(x =>
+    x.nome?.toLowerCase().includes(q) ||
+    x.sku?.toLowerCase().includes(q)
+  );
   if(p) calcular(p);
 };
 
 function calcular(p){
 
-const pInsumos = (p.insumosIds||[]).map(id=>insumos.find(i=>i.id==id)).filter(Boolean);
+const pInsumos = (p.insumosIds||[])
+.map(id=>insumos.find(i=>i.id==id))
+.filter(Boolean);
 
 const custoInsumos = pInsumos.reduce((a,i)=>a+Number(i.custo||0),0);
 
 const pesoBanho = Number(p.pesoBase||0) +
-pInsumos.filter(i=>i.somarAoBanho).reduce((a,i)=>a+Number(i.peso||0),0);
+pInsumos.filter(i=>i.somarAoBanho)
+.reduce((a,i)=>a+Number(i.peso||0),0);
 
 const banho = banhos.find(b=>b.id==p.banhoId);
 const custoBanho = pesoBanho * Number(banho?.precoPorGrama||0);
@@ -91,10 +74,11 @@ const custoBanho = pesoBanho * Number(banho?.precoPorGrama||0);
 const custoTotal = Number(p.custoBase||0) + custoInsumos + custoBanho;
 
 document.getElementById('resultado').innerHTML = `
-<div class="card">
-<img src="${p.foto||''}" class="w-full h-60 object-cover rounded-xl mb-4"/>
-<h3 class="text-xl font-bold">${p.nome}</h3>
-<p>Custo Total: R$ ${custoTotal.toFixed(2)}</p>
+<div class="bg-white p-6 rounded-xl shadow">
+<img src="${p.foto||''}" class="w-full h-60 object-cover rounded mb-4"/>
+<h2 class="text-xl font-bold">${p.nome}</h2>
+<p>SKU: ${p.sku}</p>
+<p class="mt-2 font-bold">Custo Total: R$ ${custoTotal.toFixed(2)}</p>
 </div>
 `;
 
@@ -102,7 +86,7 @@ let html = '';
 
 canais.forEach(m=>{
 const taxa = (m.comissao+m.ads+m.imposto)/100;
-const fixo = m.taxaFixa + m.freteMedia;
+const fixo = Number(m.taxaFixa||0) + Number(m.freteMedia||0);
 
 let preco = 0;
 
@@ -115,8 +99,8 @@ preco = (custoTotal + fixo) / (1 - taxa - (p.margemAlvo/100));
 const lucro = preco - (preco*taxa) - custoTotal - fixo;
 
 html += `
-<div class="card">
-<h4 class="font-bold">${m.nome}</h4>
+<div class="bg-white p-6 rounded-xl shadow">
+<h3 class="font-bold">${m.nome}</h3>
 <p>Preço: R$ ${preco.toFixed(2)}</p>
 <p class="text-green-600 font-bold">Lucro: R$ ${lucro.toFixed(2)}</p>
 </div>
@@ -125,25 +109,7 @@ html += `
 
 document.getElementById('canais').innerHTML = html;
 }
-
-function trocar(t){
-document.getElementById('dashboard').style.display='block';
-}
 </script>
-
-<style>
-.btn{
-padding:12px;
-border-radius:12px;
-background:#f1f5f9;
-font-weight:bold;
-text-align:left;
-}
-.btn:hover{
-background:#6366f1;
-color:white;
-}
-</style>
 
 </body>
 </html>
