@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/30246291/README.md)
 # Luary Shop — ERP de Precificação para Semijoias
 
 ERP comercial focado em precificação de semijoias: produtos, kits, insumos, banhos (custo do ouro/prata por grama), marketplaces (canais de venda com todas as taxas), fornecedores, estoque, financeiro/DRE e um gerador de conteúdo para anúncios.
