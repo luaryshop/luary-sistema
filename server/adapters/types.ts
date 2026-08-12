@@ -47,6 +47,17 @@ export interface UpdateStockPayload {
   stock: number;
 }
 
+export interface PauseListingPayload {
+  listingId: string;
+  paused: boolean; // true = pause, false = activate
+}
+
+export interface ListingStatusResponse {
+  listingId: string;
+  status: 'active' | 'paused' | 'inactive';
+  updatedAt: Date;
+}
+
 export interface PublishProductResponse {
   listingId: string;
   listingUrl: string;
@@ -136,6 +147,11 @@ export interface IMarketplaceAdapter {
   updateStock(accessToken: string, payload: UpdateStockPayload): Promise<SyncResult>;
 
   /**
+   * Pause or activate a listing
+   */
+  pauseListing(accessToken: string, payload: PauseListingPayload): Promise<ListingStatusResponse>;
+
+  /**
    * Get orders from the marketplace
    */
   getOrders(accessToken: string, filters?: { since?: Date; status?: string }): Promise<Order[]>;
@@ -154,4 +170,9 @@ export interface IMarketplaceAdapter {
    * Parse webhook payload
    */
   parseWebhookPayload(payload: unknown): { type: string; data: unknown } | null;
+
+  /**
+   * Get listing status
+   */
+  getListingStatus(accessToken: string, listingId: string): Promise<ListingStatusResponse>;
 }

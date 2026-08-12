@@ -259,6 +259,49 @@ export class MercadoLivreAdapter extends BaseMarketplaceAdapter implements IMark
   }
 
   /**
+   * Pause or activate a listing
+   */
+  async pauseListing(accessToken: string, payload: any): Promise<any> {
+    try {
+      this.setAuthHeader(accessToken);
+
+      const status = payload.paused ? "closed" : "active";
+
+      await this.httpClient.put(`/items/${payload.listingId}`, {
+        status,
+      });
+
+      return {
+        listingId: payload.listingId,
+        status: payload.paused ? "paused" : "active",
+        updatedAt: new Date(),
+      };
+    } catch (error) {
+      this.handleApiError(error, "MercadoLivre.pauseListing");
+    }
+  }
+
+  /**
+   * Get listing status
+   */
+  async getListingStatus(accessToken: string, listingId: string): Promise<any> {
+    try {
+      this.setAuthHeader(accessToken);
+
+      const response = await this.httpClient.get(`/items/${listingId}`);
+      const status = response.data.status === "active" ? "active" : "paused";
+
+      return {
+        listingId,
+        status,
+        updatedAt: new Date(),
+      };
+    } catch (error) {
+      this.handleApiError(error, "MercadoLivre.getListingStatus");
+    }
+  }
+
+  /**
    * Parse webhook payload
    */
   parseWebhookPayload(payload: unknown): { type: string; data: unknown } | null {

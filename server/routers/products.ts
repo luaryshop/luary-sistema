@@ -4,7 +4,24 @@ import { ProductSyncService } from "../services/productSyncService";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { products } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+
+const productFields = {
+  sku: z.string().trim().min(1, "SKU é obrigatório").max(100),
+  name: z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres").max(255),
+  category: z.string().trim().max(100).optional(),
+  brand: z.string().trim().max(100).optional(),
+  description: z.string().trim().max(10000).optional(),
+  costBase: z.number().int().min(0).default(0),
+  stock: z.number().int().min(0).default(0),
+  minStock: z.number().int().min(0).default(0),
+};
+
+export const productInput = z.object(productFields);
+
+export function isProductOwnedByUser(productOwnerId: number, userId: number) {
+  return productOwnerId === userId;
+}
 
 export const productsRouter = router({
   /**
@@ -194,7 +211,7 @@ export const productsRouter = router({
       const product = await db
         .select()
         .from(products)
-        .where(eq(products.id, input.id))
+        .where(and(eq(products.id, input.id), eq(products.userId, ctx.user.id)))
         .limit(1);
 
       if (product.length === 0) {
@@ -206,6 +223,7 @@ export const productsRouter = router({
 
       return product[0];
     } catch (error) {
+      if (error instanceof TRPCError) throw error;
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: error instanceof Error ? error.message : "Failed to fetch product",
@@ -217,37 +235,19 @@ export const productsRouter = router({
    * Create a new product
    */
   create: protectedProcedure
-    .input(
-      z.object({
-        sku: z.string(),
-        name: z.string(),
-        category: z.string().optional(),
-        brand: z.string().optional(),
-        description: z.string().optional(),
-        costBase: z.number().default(0),
-        stock: z.number().default(0),
-        minStock: z.number().default(0),
-      })
-    )
+    .input(productInput)
     .mutation(async ({ ctx, input }) => {
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
-        await db.insert(products).values({
-          userId: ctx.user.id,
-          sku: input.sku,
-          name: input.name,
-          category: input.category,
-          brand: input.brand,
-          description: input.description,
-          costBase: input.costBase,
-          stock: input.stock,
-          minStock: input.minStock,
-        });
+        const duplicate = await db.select({ id: products.id }).from(products).where(and(eq(products.userId, ctx.user.id), eq(products.sku, input.sku))).limit(1);
+        if (duplicate[0]) throw new TRPCError({ code: "CONFLICT", message: "Já existe um produto com este SKU" });
+        const result = await db.insert(products).values({ userId: ctx.user.id, ...input });
 
-        return { success: true, message: "Product created successfully" };
+        return { id: Number((result as any)[0]?.insertId ?? 0), success: true, message: "Product created successfully" };
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: error instanceof Error ? error.message : "Failed to create product",
@@ -259,19 +259,7 @@ export const productsRouter = router({
    * Update a product
    */
   update: protectedProcedure
-    .input(
-      z.object({
-        id: z.number(),
-        sku: z.string().optional(),
-        name: z.string().optional(),
-        category: z.string().optional(),
-        brand: z.string().optional(),
-        description: z.string().optional(),
-        costBase: z.number().optional(),
-        stock: z.number().optional(),
-        minStock: z.number().optional(),
-      })
-    )
+    .input(z.object({ id: z.number().int().positive(), ...productFields }).partial({ sku: true, name: true, category: true, brand: true, description: true, costBase: true, stock: true, minStock: true }).extend({ id: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
       try {
         const db = await getDb();
@@ -287,13 +275,42 @@ export const productsRouter = router({
         if (input.stock !== undefined) updateData.stock = input.stock;
         if (input.minStock !== undefined) updateData.minStock = input.minStock;
 
-        await db.update(products).set(updateData).where(eq(products.id, input.id));
+        const current = await db.select({ id: products.id }).from(products).where(and(eq(products.id, input.id), eq(products.userId, ctx.user.id))).limit(1);
+        if (!current[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Produto não encontrado" });
+        if (input.sku !== undefined) {
+          const duplicate = await db.select({ id: products.id }).from(products).where(and(eq(products.userId, ctx.user.id), eq(products.sku, input.sku))).limit(1);
+          if (duplicate[0] && duplicate[0].id !== input.id) throw new TRPCError({ code: "CONFLICT", message: "Já existe um produto com este SKU" });
+        }
+        if (Object.keys(updateData).length === 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Informe ao menos um campo para atualizar" });
+        }
+        await db.update(products).set(updateData).where(and(eq(products.id, input.id), eq(products.userId, ctx.user.id)));
 
         return { success: true, message: "Product updated successfully" };
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: error instanceof Error ? error.message : "Failed to update product",
+        });
+      }
+    }),
+
+  remove: protectedProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const current = await db.select({ id: products.id }).from(products).where(and(eq(products.id, input.id), eq(products.userId, ctx.user.id))).limit(1);
+        if (!current[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Produto não encontrado" });
+        await db.delete(products).where(and(eq(products.id, input.id), eq(products.userId, ctx.user.id)));
+        return { success: true, message: "Product removed successfully" };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error instanceof Error ? error.message : "Failed to remove product",
         });
       }
     }),

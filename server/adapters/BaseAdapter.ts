@@ -60,4 +60,11 @@ export abstract class BaseMarketplaceAdapter implements IMarketplaceAdapter {
   abstract getOrder(accessToken: string, orderId: string): Promise<any>;
   abstract verifyWebhookSignature(payload: string, signature: string, secret: string): boolean;
   abstract parseWebhookPayload(payload: unknown): { type: string; data: unknown } | null;
+  async pauseListing(_accessToken: string, _payload: any): Promise<any> {
+    throw new Error("This marketplace adapter does not implement listing pause yet");
+  }
+
+  async getListingStatus(_accessToken: string, _listingId: string): Promise<any> {
+    throw new Error("This marketplace adapter does not implement listing status lookup yet");
+  }
 }

@@ -278,6 +278,23 @@ export type Kit = typeof kits.$inferSelect;
 export type InsertKit = typeof kits.$inferInsert;
 
 /**
+ * Components used by a kit. A row can reference either an ERP product or an insumo.
+ */
+export const kitItems = mysqlTable("kit_items", {
+  id: int("id").autoincrement().primaryKey(),
+  kitId: int("kit_id").notNull().references(() => kits.id, { onDelete: "cascade" }),
+  productId: int("product_id").references(() => products.id, { onDelete: "cascade" }),
+  insumoId: int("insumo_id").references(() => insumos.id, { onDelete: "cascade" }),
+  quantity: int("quantity").default(1).notNull(),
+  unitCost: int("unit_cost").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type KitItem = typeof kitItems.$inferSelect;
+export type InsertKitItem = typeof kitItems.$inferInsert;
+
+/**
  * Financial transactions
  */
 export const financeiro = mysqlTable("financeiro", {
@@ -295,3 +312,41 @@ export const financeiro = mysqlTable("financeiro", {
 
 export type Financeiro = typeof financeiro.$inferSelect;
 export type InsertFinanceiro = typeof financeiro.$inferInsert;
+
+/**
+ * SEO settings maintained by the ERP owner.
+ */
+export const seoSettings = mysqlTable("seo_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  pageKey: varchar("page_key", { length: 100 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  keywords: varchar("keywords", { length: 500 }),
+  canonicalUrl: varchar("canonical_url", { length: 500 }),
+  ogImageUrl: varchar("og_image_url", { length: 500 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SeoSetting = typeof seoSettings.$inferSelect;
+export type InsertSeoSetting = typeof seoSettings.$inferInsert;
+
+/**
+ * Live stream planning and catalog.
+ */
+export const liveStreams = mysqlTable("live_streams", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 255 }).notNull(),
+  platform: varchar("platform", { length: 100 }).notNull(),
+  scheduledAt: timestamp("scheduled_at"),
+  status: varchar("status", { length: 50 }).default("planned").notNull(),
+  link: varchar("link", { length: 500 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LiveStream = typeof liveStreams.$inferSelect;
+export type InsertLiveStream = typeof liveStreams.$inferInsert;
