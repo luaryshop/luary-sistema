@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Package, ShoppingCart, Globe, Settings, LogOut } from "lucide-react";
 import { useLocation } from "wouter";
-import { startLogin } from "@/const";
+import { LoginForm } from "@/components/LoginForm";
 
 export default function Home() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -20,13 +20,9 @@ export default function Home() {
           <p className="text-gray-700">
             Gerencie seus produtos, estoque e pedidos de todos os seus marketplaces em um único lugar.
           </p>
-          <Button
-            size="lg"
-            onClick={startLogin}
-            className="w-full"
-          >
-            Fazer Login
-          </Button>
+          <div className="flex justify-center">
+            <LoginForm />
+          </div>
         </div>
       </div>
     );
@@ -134,7 +130,7 @@ export default function Home() {
                 <CardTitle className="text-sm font-medium text-gray-600">Método de Login</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-lg font-semibold capitalize">{user?.loginMethod || "Manus OAuth"}</p>
+                <p className="text-lg font-semibold capitalize">{user?.loginMethod || "Senha"}</p>
               </CardContent>
             </Card>
             <Card>
