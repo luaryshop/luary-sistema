@@ -96,8 +96,7 @@ export const marketplaceListings = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     marketplaceConnectionId: int("marketplace_connection_id")
-      .notNull()
-      .references(() => marketplaceConnections.id, { onDelete: "cascade" }),
+      .notNull(),
     productId: int("product_id")
       .notNull()
       .references(() => products.id, { onDelete: "cascade" }),
@@ -116,6 +115,9 @@ export const marketplaceListings = mysqlTable(
   (table) => ({
     marketplaceListingIdx: `UNIQUE KEY mkt_listing_idx (marketplace_connection_id, marketplace_listing_id)`,
     productIdx: `KEY product_idx (product_id)`,
+    // Nota: a FK de marketplace_connection_id (nome curto "mkt_listings_conn_fk") é
+    // adicionada manualmente no arquivo de migration, pois o nome automático do
+    // drizzle passava de 64 caracteres (limite do MySQL/MariaDB).
   })
 );
 
@@ -187,7 +189,7 @@ export const syncLogs = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-    marketplaceConnectionId: int("marketplace_connection_id").references(() => marketplaceConnections.id, { onDelete: "set null" }),
+    marketplaceConnectionId: int("marketplace_connection_id"),
     productId: int("product_id").references(() => products.id, { onDelete: "set null" }),
     orderId: int("order_id").references(() => orders.id, { onDelete: "set null" }),
     syncType: varchar("sync_type", { length: 50 }).notNull(), // 'product_publish', 'product_update', 'stock_sync', 'price_update', 'order_import'
@@ -205,6 +207,8 @@ export const syncLogs = mysqlTable(
     marketplaceIdx: `KEY marketplace_idx (marketplace_connection_id)`,
     productIdx: `KEY product_idx (product_id)`,
     syncTypeIdx: `KEY sync_type_idx (sync_type, status)`,
+    // Nota: a FK de marketplace_connection_id (nome curto "sync_logs_conn_fk") é
+    // adicionada manualmente no arquivo de migration, pelo mesmo motivo acima.
   })
 );
 

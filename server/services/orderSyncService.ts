@@ -61,8 +61,8 @@ export class OrderSyncService {
               })
               .where(eq(orders.id, existing[0].id));
           } else {
-            // Insert new order
-            await db.insert(orders).values({
+            // Insert new order and capture its generated ID
+            const result = await db.insert(orders).values({
               userId,
               marketplaceConnectionId: connection.id,
               marketplaceOrderId: order.orderId,
@@ -73,11 +73,20 @@ export class OrderSyncService {
               orderDate: order.orderDate,
               shippingAddress: order.shippingAddress ? JSON.stringify(order.shippingAddress) : null,
             });
+            const newOrderId = Number((result as any)[0]?.insertId ?? 0);
 
-            // Note: Order items insertion would require the orderId from the inserted order
-            // In a production environment, you would fetch the inserted order ID and then insert items
-            // For now, items are skipped to avoid complexity with the Drizzle ORM insert result
-            // TODO: Implement proper order items insertion after getting the orderId
+            if (newOrderId && order.items?.length) {
+              await db.insert(orderItems).values(
+                order.items.map((item) => ({
+                  orderId: newOrderId,
+                  marketplaceItemId: item.itemId,
+                  title: item.title,
+                  quantity: item.quantity,
+                  unitPrice: item.unitPrice,
+                  totalPrice: item.totalPrice,
+                }))
+              );
+            }
           }
 
           imported++;

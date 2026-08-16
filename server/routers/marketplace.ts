@@ -4,6 +4,21 @@ import { MarketplaceService } from "../services/marketplaceService";
 import { AdapterFactory } from "../adapters/AdapterFactory";
 import { TRPCError } from "@trpc/server";
 
+// Guarda o "state" gerado em getAuthorizationUrl para validar no callback
+// (proteção CSRF do fluxo OAuth). Em memória: suficiente para uma instância
+// única do servidor (é o cenário normal de deploy deste ERP).
+const pendingOAuthStates = new Map<string, { userId: number; createdAt: number }>();
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000; // 10 minutos para completar o login
+
+function cleanupExpiredStates() {
+  const now = Date.now();
+  pendingOAuthStates.forEach((entry, state) => {
+    if (now - entry.createdAt > OAUTH_STATE_TTL_MS) {
+      pendingOAuthStates.delete(state);
+    }
+  });
+}
+
 export const marketplaceRouter = router({
   /**
    * Get all marketplace connections for the current user
@@ -40,17 +55,20 @@ export const marketplaceRouter = router({
         marketplaceType: z.enum(["mercadolivre", "shopee", "amazon", "tiktok"]),
       })
     )
-    .query(({ input }) => {
+    .query(({ input, ctx }) => {
       try {
         if (!AdapterFactory.isSupported(input.marketplaceType)) {
           throw new Error(`Unsupported marketplace: ${input.marketplaceType}`);
         }
 
-        // Generate a random state for CSRF protection
-        const state = Math.random().toString(36).substring(2, 15);
+        // Generate a random state for CSRF protection.
+        // O tipo de marketplace vai embutido no próprio state (prefixo "tipo::"),
+        // porque o marketplace só devolve os parâmetros "code" e "state" no
+        // redirect — não devolve nenhum parâmetro extra que a gente mande.
+        const state = `${input.marketplaceType}::${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 15)}`;
 
-        // Store state in session (TODO: implement session storage)
-        // For now, we'll return it and expect the client to send it back
+        cleanupExpiredStates();
+        pendingOAuthStates.set(state, { userId: ctx.user.id, createdAt: Date.now() });
 
         const credentials = {
           clientId: process.env[`${input.marketplaceType.toUpperCase()}_CLIENT_ID`] || "",
@@ -87,6 +105,16 @@ export const marketplaceRouter = router({
           throw new Error(`Unsupported marketplace: ${input.marketplaceType}`);
         }
 
+        // Valida o "state" (proteção CSRF) antes de prosseguir
+        const pending = pendingOAuthStates.get(input.state);
+        if (!pending || pending.userId !== ctx.user.id) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "State inválido ou expirado. Tente conectar novamente.",
+          });
+        }
+        pendingOAuthStates.delete(input.state); // uso único
+
         const credentials = {
           clientId: process.env[`${input.marketplaceType.toUpperCase()}_CLIENT_ID`] || "",
           clientSecret: process.env[`${input.marketplaceType.toUpperCase()}_CLIENT_SECRET`] || "",
@@ -119,6 +147,7 @@ export const marketplaceRouter = router({
           sellerName: sellerInfo.sellerName,
         };
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: error instanceof Error ? error.message : "Failed to connect marketplace",
