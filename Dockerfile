@@ -5,6 +5,7 @@ WORKDIR /app
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN pnpm install --frozen-lockfile
 
 COPY . .
@@ -18,10 +19,10 @@ RUN corepack enable
 ENV NODE_ENV=production
 
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=build /app/dist ./dist
 
-# Cloud Run injeta a variável PORT automaticamente; o servidor já lê ENV.port via process.env.PORT
 EXPOSE 8080
 CMD ["node", "dist/index.js"]
