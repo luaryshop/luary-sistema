@@ -10,6 +10,7 @@ import Marketplaces from "./pages/Marketplaces";
 import Dashboard from "./pages/Dashboard";
 import Orders from "@/pages/Orders";
 import Cadastros from "@/pages/Cadastros";
+import SalesChannels from "@/pages/SalesChannels";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/pedidos" component={Orders} />
       <Route path="/marketplaces" component={Marketplaces} />
       <Route path="/cadastros" component={Cadastros} />
+      <Route path="/canais" component={SalesChannels} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

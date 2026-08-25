@@ -60,6 +60,30 @@ export type MarketplaceConnection = typeof marketplaceConnections.$inferSelect;
 export type InsertMarketplaceConnection = typeof marketplaceConnections.$inferInsert;
 
 /**
+ * Canais de venda para cálculo de preço/margem — desacoplado da integração OAuth.
+ * Cobre marketplaces conectados, mas também loja própria, Instagram, WhatsApp etc.
+ * Percentuais são armazenados x100 (ex: 12,5% = 1250) para evitar ponto flutuante.
+ */
+export const salesChannels = mysqlTable("sales_channels", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 100 }).notNull(), // "Mercado Livre", "Loja Própria", "Instagram"...
+  marketplaceType: varchar("marketplace_type", { length: 50 }), // liga com marketplace_connections, se aplicável
+  commissionBp: int("commission_bp").default(0).notNull(), // comissão, em pontos-base (1250 = 12,50%)
+  fixedFeeCents: int("fixed_fee_cents").default(0).notNull(), // taxa fixa por venda, em centavos
+  shippingCostCents: int("shipping_cost_cents").default(0).notNull(), // frete médio pago pelo vendedor, em centavos
+  taxBp: int("tax_bp").default(0).notNull(), // imposto, em pontos-base
+  isActive: int("is_active").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SalesChannel = typeof salesChannels.$inferSelect;
+export type InsertSalesChannel = typeof salesChannels.$inferInsert;
+
+/**
  * Products in the ERP system
  */
 export const products = mysqlTable("products", {

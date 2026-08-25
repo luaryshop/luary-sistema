@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Package, ShoppingCart, Globe, Settings, LogOut } from "lucide-react";
+import { BarChart3, Package, ShoppingCart, Globe, Settings, LogOut, ClipboardList, Calculator } from "lucide-react";
 import { useLocation } from "wouter";
 import { LoginForm } from "@/components/LoginForm";
 
@@ -56,6 +56,20 @@ export default function Home() {
       icon: Globe,
       path: "/marketplaces",
       color: "bg-orange-500",
+    },
+    {
+      title: "Cadastros",
+      description: "Insumos, banhos, kits, financeiro, SEO e agenda de lives",
+      icon: ClipboardList,
+      path: "/cadastros",
+      color: "bg-rose-500",
+    },
+    {
+      title: "Canais de Venda",
+      description: "Comissão, taxa e frete de cada canal — calcule preço e margem",
+      icon: Calculator,
+      path: "/canais",
+      color: "bg-teal-500",
     },
   ];
 
