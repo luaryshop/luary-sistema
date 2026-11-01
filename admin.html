@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Luary</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full flex flex-col justify-between">
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-75 hidden">
+        <div class="max-w-md w-full bg-white rounded-xl shadow-2xl p-8 m-4">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-extrabold text-gray-900">Luary Admin</h2>
+                <p class="text-sm text-gray-600 mt-2">Acesse com suas credenciais autorizadas</p>
+            </div>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">E-mail</label>
+                    <input type="email" id="login-email" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Senha</label>
+                    <input type="password" id="login-password" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div id="login-error" class="text-red-500 text-sm hidden"></div>
+                <button type="submit" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition duration-200">
+                    Entrar no Sistema
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAINEL ADMINISTRATIVO -->
+    <div id="admin-panel" class="min-h-full flex flex-col hidden">
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <span class="text-xl font-bold text-indigo-600"><i class="fa-solid fa-gem mr-2"></i>Luary Dashboard</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="user-email-display" class="text-sm text-gray-600 font-medium"></span>
+                    <a href="pedidos.html" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg font-medium mr-2"><i class="fa-solid fa-clipboard-list mr-1"></i> Pedidos</a>
+                    <a href="content-admin.html" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-medium mr-2"><i class="fa-solid fa-sliders mr-1"></i> Conteúdo do Site</a>
+                <button id="logout-btn" class="bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition duration-150">
+                        <i class="fa-solid fa-right-from-bracket mr-2"></i>Sair
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <!-- Cards de Métricas -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-500">Produtos Cadastrados</h3>
+                    <p class="text-3xl font-bold text-gray-900 mt-2" id="metric-products-count">--</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-500">Canal de Vendas</h3>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">Atacado</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-500">Status da CDN (luary-cdn)</h3>
+                    <p class="text-3xl font-bold text-green-600 mt-2">Online</p>
+                </div>
+            </div>
+
+            <!-- Formulário de Cadastro / Edição -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6">
+                <div class="border-b border-gray-200 pb-4 mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 id="form-title" class="text-xl font-bold text-gray-800"><i class="fa-solid fa-box-open mr-2 text-indigo-600"></i>Novo Produto / Referência</h2>
+                        <p class="text-sm text-gray-500 mt-1">Preencha os dados e mapeie as fotos na pasta individual do SKU (`luary-cdn`).</p>
+                    </div>
+                    <button type="button" id="cancel-edit-btn" class="text-sm text-gray-500 hover:text-red-600 hidden">
+                        <i class="fa-solid fa-xmark mr-1"></i>Cancelar Edição
+                    </button>
+                </div>
+
+                <form id="product-form" class="space-y-6">
+                    <input type="hidden" id="editing-doc-id">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">SKU / Referência</label>
+                            <input type="text" id="prod-sku" required placeholder="Ex: LUA-1020" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Título do Produto</label>
+                            <input type="text" id="prod-name" required placeholder="Ex: Anel Solitário Cravejado" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Categoria</label>
+                            <input type="text" id="prod-category" required placeholder="Ex: Anéis" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Preço Atacado (R$)</label>
+                            <input type="number" step="0.01" id="prod-price-wholesale" required class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Preço Varejo (R$)</label>
+                            <input type="number" step="0.01" id="prod-price-retail" required class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Quantidade mínima por pedido (un.)</label>
+                        <input type="number" min="1" max="999" step="1" id="prod-min-qty" value="1" class="mt-1 block w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <p class="mt-1 text-xs text-gray-500">Na loja, o cliente não consegue pedir menos que isso deste SKU. Deixe 1 para sem mínimo.</p>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagens do Produto (até 10 fotos)</label>
+                        <div class="flex flex-wrap items-center gap-3 rounded-lg bg-indigo-50 p-4 text-sm text-indigo-900">
+                            <span id="images-info" class="flex-1 min-w-[220px]">Salve o produto e depois envie as fotos no gerenciador da CDN. Elas são convertidas para WebP, publicadas no GitHub e vinculadas ao produto automaticamente.</span>
+                            <button type="button" id="manage-images-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium"><i class="fa-solid fa-images mr-2"></i>Gerenciar imagens na CDN</button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 border-t border-gray-200 pt-6">
+                        <button type="submit" id="submit-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium shadow-sm transition">
+                            <i class="fa-solid fa-cloud-arrow-up mr-2"></i>Salvar Produto no Firestore
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Seção de Listagem e Gerenciamento de Produtos Cadastrados -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6">
+                <div class="border-b border-gray-200 pb-4 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-list mr-2 text-indigo-600"></i>Produtos Cadastrados no Sistema</h2>
+                    <p class="text-sm text-gray-500 mt-1">Visualize, edite ou remova os produtos ativos em tempo real.</p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU / Título</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Atacado / Varejo</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-table-body" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-400">Carregando produtos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts Firebase e Lógica -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCanlMwdfuD9gmVt62nJYYetj4K2-BfWEc",
+            authDomain: "luary-system.firebaseapp.com",
+            projectId: "luary-system",
+            storageBucket: "luary-system.firebasestorage.app",
+            messagingSenderId: "996287172742",
+            appId: "1:996287172742:web:4ff8c22a01cabe4015c107"
+        };
+
+        import { publicProductImages, normalizeSku, isValidSku } from "./cdn-lib.js";
+        const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const loginScreen = document.getElementById('login-screen');
+        const adminPanel = document.getElementById('admin-panel');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userEmailDisplay = document.getElementById('user-email-display');
+        
+        const productForm = document.getElementById('product-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const metricProductsCount = document.getElementById('metric-products-count');
+        const productsTableBody = document.getElementById('products-table-body');
+        const editingDocIdInput = document.getElementById('editing-doc-id');
+        const formTitle = document.getElementById('form-title');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+        let productsCache = [];
+
+        async function loadAdminProducts() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "products"));
+                metricProductsCount.textContent = querySnapshot.size;
+                productsCache = [];
+                
+                if (querySnapshot.empty) {
+                    productsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum produto cadastrado.</td></tr>`;
+                    return;
+                }
+
+                productsTableBody.innerHTML = '';
+                querySnapshot.forEach((docSnap) => {
+                    const product = { id: docSnap.id, ...docSnap.data() };
+                    productsCache.push(product);
+
+                    const mainImage = (product.images && product.images.length > 0) ? product.images[0] : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="%23e5e7eb"/></svg>';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <img src="${esc(mainImage)}" class="h-12 w-12 object-cover rounded-lg border border-gray-200" alt="${esc(product.sku)}">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-bold text-gray-900">${esc(product.sku)}</div><div class="text-xs text-gray-400">${(product.images||[]).length} foto(s)</div>
+                            <div class="text-sm text-gray-500 truncate max-w-xs">${esc(product.name)}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${esc(product.category)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span class="font-bold text-indigo-600">R$ ${Number(product.priceWholesale).toFixed(2)}</span><br>
+                            <span class="text-xs text-gray-400">Varejo: R$ ${Number(product.priceRetail).toFixed(2)}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                            <button onclick="window.open('cdn.html?sku=' + encodeURIComponent('${esc(product.sku)}'), '_blank')" class="text-emerald-700 hover:text-emerald-900 bg-emerald-50 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-images mr-1"></i>Imagens</button>
+                            <button onclick="window.editProduct('${product.id}')" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-pen-to-square mr-1"></i>Editar</button>
+                            <button onclick="window.deleteProduct('${product.id}')" class="text-red-600 hover:text-red-900 bg-red-50 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash mr-1"></i>Excluir</button>
+                        </td>
+                    `;
+                    productsTableBody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("Erro ao carregar produtos:", error);
+                productsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-red-500">Erro ao carregar os dados.</td></tr>`;
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loginScreen.classList.add('hidden');
+                adminPanel.classList.remove('hidden');
+                userEmailDisplay.textContent = user.email;
+                loadAdminProducts();
+            } else {
+                adminPanel.classList.add('hidden');
+                loginScreen.classList.remove('hidden');
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginError.classList.add('hidden');
+            try {
+                await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value);
+            } catch (error) {
+                loginError.textContent = "Erro ao entrar: Verifique suas credenciais.";
+                loginError.classList.remove('hidden');
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try { await signOut(auth); } catch (error) { console.error(error); }
+        });
+
+        // Função global para editar produto
+        window.editProduct = (id) => {
+            const product = productsCache.find(p => p.id === id);
+            if (!product) return;
+
+            editingDocIdInput.value = product.id;
+            document.getElementById('prod-sku').value = product.sku;
+            document.getElementById('prod-name').value = product.name;
+            document.getElementById('prod-category').value = product.category;
+            document.getElementById('prod-price-wholesale').value = product.priceWholesale;
+            document.getElementById('prod-price-retail').value = product.priceRetail;
+            document.getElementById('prod-min-qty').value = Math.max(1, parseInt(product.minQty, 10) || 1);
+
+            formTitle.innerHTML = `<i class="fa-solid fa-pen-to-square mr-2 text-indigo-600"></i>Editar Produto: ${product.sku}`;
+            submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i>Atualizar Produto';
+            cancelEditBtn.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        cancelEditBtn.addEventListener('click', () => {
+            productForm.reset();
+            editingDocIdInput.value = '';
+            formTitle.innerHTML = `<i class="fa-solid fa-box-open mr-2 text-indigo-600"></i>Novo Produto / Referência`;
+            submitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Salvar Produto no Firestore';
+            cancelEditBtn.classList.add('hidden');
+        });
+
+        // Função global para excluir produto
+        window.deleteProduct = async (id) => {
+            if (!confirm("Tem certeza que deseja excluir este produto do sistema?")) return;
+            try {
+                await deleteDoc(doc(db, "products", id));
+                alert("Produto excluído com sucesso!");
+                loadAdminProducts();
+            } catch (error) {
+                console.error("Erro ao excluir:", error);
+                alert("Erro ao excluir o produto.");
+            }
+        };
+
+        document.getElementById('manage-images-btn').addEventListener('click', () => {
+            const sku = normalizeSku(document.getElementById('prod-sku').value);
+            window.open(isValidSku(sku) ? 'cdn.html?sku=' + encodeURIComponent(sku) : 'cdn.html', '_blank');
+        });
+
+        productForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const docId = editingDocIdInput.value;
+            const sku = document.getElementById('prod-sku').value.trim().toUpperCase();
+            const name = document.getElementById('prod-name').value;
+            const category = document.getElementById('prod-category').value;
+            const priceWholesale = parseFloat(document.getElementById('prod-price-wholesale').value);
+            const priceRetail = parseFloat(document.getElementById('prod-price-retail').value);
+            const minQty = Math.max(1, Math.min(999, parseInt(document.getElementById('prod-min-qty').value, 10) || 1));
+            if (!isValidSku(sku)) return alert('Informe um SKU válido (letras, números e hífen).');
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Salvando...';
+
+            try {
+                // Fotos são gerenciadas em cdn.html. Na edição, preserva as atuais; em produto novo,
+                // aproveita fotos já publicadas na pasta do SKU (se houver).
+                let imageUrls = [];
+                if (docId) {
+                    const existingProduct = productsCache.find(p => p.id === docId);
+                    imageUrls = existingProduct && Array.isArray(existingProduct.images) ? existingProduct.images : [];
+                } else {
+                    try { imageUrls = await publicProductImages(sku); } catch (e) { imageUrls = []; }
+                }
+
+                if (docId) {
+                    // Atualizar produto existente
+                    await updateDoc(doc(db, "products", docId), {
+                        sku, name, category, priceWholesale, priceRetail, minQty, images: imageUrls
+                    });
+                    alert(`Produto ${sku} atualizado com sucesso!`);
+                } else {
+                    // Criar novo produto
+                    await addDoc(collection(db, "products"), {
+                        sku, name, category, priceWholesale, priceRetail, minQty, images: imageUrls, createdAt: new Date().toISOString()
+                    });
+                    alert(`Produto ${sku} cadastrado com sucesso!`);
+                }
+
+                productForm.reset();
+                editingDocIdInput.value = '';
+                formTitle.innerHTML = `<i class="fa-solid fa-box-open mr-2 text-indigo-600"></i>Novo Produto / Referência`;
+                submitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Salvar Produto no Firestore';
+                cancelEditBtn.classList.add('hidden');
+                loadAdminProducts();
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao salvar produto.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = docId ? '<i class="fa-solid fa-floppy-disk mr-2"></i>Atualizar Produto' : '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Salvar Produto no Firestore';
+            }
+        });
+    </script>
+</body>
+</html>
