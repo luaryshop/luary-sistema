@@ -35,7 +35,10 @@ export async function loadStore() {
     promotions = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   } catch (e) { console.warn("Promoções indisponíveis; usando preços normais.", e); }
   const rawSettings = settingsSnap && settingsSnap.exists() ? settingsSnap.data() : {};
-  return { products: productsSnap.docs.map((d) => ({ id: d.id, ...d.data() })), promotions, rawSettings, settings: normalizeSettings(rawSettings) };
+  const settings = normalizeSettings(rawSettings);
+  // Quantidade mínima: a do produto vale; sem ela, vale o padrão da empresa.
+  const products = productsSnap.docs.map((d) => { const p = { id: d.id, ...d.data() }; if (!(Number(p.minQty) > 0)) p.minQty = settings.defaultMinQty; return p; });
+  return { products, promotions, rawSettings, settings };
 }
 
 // Cupons ficam em promotions/cp_{CÓDIGO}: leitura direta por ID (a listagem pública só devolve promoções automáticas).

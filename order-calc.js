@@ -20,6 +20,7 @@ export function normalizeSettings(raw = {}) {
     shippingFlat: Math.max(0, num(raw.shippingFlat)),
     freeShippingFrom: Math.max(0, num(raw.freeShippingFrom)),
     minOrder: Math.max(0, num(raw.minOrder)),
+    defaultMinQty: Math.max(1, Math.min(999, Math.trunc(num(raw.defaultMinQty)) || 1)),
     storeName: String(raw.companyName || "Luary Shop").trim() || "Luary Shop",
     whatsapp: normalizePhone(raw.whatsapp),
   };

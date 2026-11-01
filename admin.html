@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="h-full bg-gray-50">
 <head>
+<meta name="robots" content="noindex, nofollow">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Administrativo - Luary</title>
@@ -112,8 +113,19 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Quantidade mínima por pedido (un.)</label>
-                        <input type="number" min="1" max="999" step="1" id="prod-min-qty" value="1" class="mt-1 block w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        <p class="mt-1 text-xs text-gray-500">Na loja, o cliente não consegue pedir menos que isso deste SKU. Deixe 1 para sem mínimo.</p>
+                        <input type="number" min="1" max="999" step="1" id="prod-min-qty" placeholder="Padrão da empresa" class="mt-1 block w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <p class="mt-1 text-xs text-gray-500">Na loja, o cliente não consegue pedir menos que isso deste SKU. Deixe em branco para usar o mínimo padrão definido em Empresa e Identidade.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Título SEO (opcional, até 70 caracteres)</label>
+                            <input type="text" id="prod-seo-title" maxlength="70" placeholder="Padrão: nome da peça + SKU" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Descrição SEO / compartilhamento (opcional, até 200)</label>
+                            <textarea id="prod-seo-desc" rows="2" maxlength="200" placeholder="Aparece no Google e na prévia do WhatsApp" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm"></textarea>
+                        </div>
                     </div>
 
                     <div class="border-t border-gray-200 pt-6">
@@ -284,7 +296,9 @@
             document.getElementById('prod-category').value = product.category;
             document.getElementById('prod-price-wholesale').value = product.priceWholesale;
             document.getElementById('prod-price-retail').value = product.priceRetail;
-            document.getElementById('prod-min-qty').value = Math.max(1, parseInt(product.minQty, 10) || 1);
+            document.getElementById('prod-min-qty').value = parseInt(product.minQty, 10) > 0 ? parseInt(product.minQty, 10) : '';
+            document.getElementById('prod-seo-title').value = product.seoTitle || '';
+            document.getElementById('prod-seo-desc').value = product.seoDescription || '';
 
             formTitle.innerHTML = `<i class="fa-solid fa-pen-to-square mr-2 text-indigo-600"></i>Editar Produto: ${product.sku}`;
             submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i>Atualizar Produto';
@@ -326,7 +340,10 @@
             const category = document.getElementById('prod-category').value;
             const priceWholesale = parseFloat(document.getElementById('prod-price-wholesale').value);
             const priceRetail = parseFloat(document.getElementById('prod-price-retail').value);
-            const minQty = Math.max(1, Math.min(999, parseInt(document.getElementById('prod-min-qty').value, 10) || 1));
+            const minQtyRaw = parseInt(document.getElementById('prod-min-qty').value, 10);
+            const minQty = minQtyRaw > 0 ? Math.min(999, minQtyRaw) : 0;
+            const seoTitle = document.getElementById('prod-seo-title').value.trim().slice(0, 70);
+            const seoDescription = document.getElementById('prod-seo-desc').value.trim().slice(0, 200);
             if (!isValidSku(sku)) return alert('Informe um SKU válido (letras, números e hífen).');
 
             submitBtn.disabled = true;
@@ -346,13 +363,13 @@
                 if (docId) {
                     // Atualizar produto existente
                     await updateDoc(doc(db, "products", docId), {
-                        sku, name, category, priceWholesale, priceRetail, minQty, images: imageUrls
+                        sku, name, category, priceWholesale, priceRetail, minQty, seoTitle, seoDescription, images: imageUrls
                     });
                     alert(`Produto ${sku} atualizado com sucesso!`);
                 } else {
                     // Criar novo produto
                     await addDoc(collection(db, "products"), {
-                        sku, name, category, priceWholesale, priceRetail, minQty, images: imageUrls, createdAt: new Date().toISOString()
+                        sku, name, category, priceWholesale, priceRetail, minQty, seoTitle, seoDescription, images: imageUrls, createdAt: new Date().toISOString()
                     });
                     alert(`Produto ${sku} cadastrado com sucesso!`);
                 }
