@@ -20,7 +20,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return request.auth != null
-        && request.auth.token.email in ['SEU_EMAIL_ADMIN@exemplo.com'];
+        && request.auth.token.email in ['luarysemijoias@gmail.com'];
     }
 
     function validOrder(d) {
