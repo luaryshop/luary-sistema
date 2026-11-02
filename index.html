@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#23384a">
   <meta name="description" content="Luary Shop — acessórios com significado. Confira o catálogo, monte seu pedido de atacado e encontre a loja oficial no varejo.">
@@ -42,6 +44,15 @@
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
   </style>
 <style>
+/* Fotos de produto 1:1 (sem cortar) */
+.product-photo{aspect-ratio:1/1;min-height:0;background:#fff}
+.product-photo img{object-fit:contain;background:#fff}
+.detail-main-photo{flex:0 0 auto;width:min(100%,400px);height:auto;max-height:none;aspect-ratio:1/1;min-height:0;margin:0 auto;background:#fff}
+.detail-main-photo img{object-fit:contain}
+.thumbnail{background:#fff}.thumbnail img{object-fit:contain;background:#fff}
+.cart-item>img{object-fit:contain;background:#fff}
+@media(max-width:980px){.product-details{min-height:0}.product-description{margin-bottom:14px}}
+@media(max-width:700px){.product-card{grid-template-columns:1fr;min-height:0}.product-photo{width:100%}.product-details{padding:16px 16px 14px}}
 /* Marketplaces compactos + ajustes multi-telas */
 .retail-section{display:block;padding:72px 0 84px}
 .retail-head{margin-bottom:26px}.retail-head .eyebrow{margin-bottom:14px}
@@ -112,8 +123,8 @@
       messagingSenderId: "996287172742",
       appId: "1:996287172742:web:4ff8c22a01cabe4015c107"
     };
-    let WHATSAPP_NUMBER = "5519999999999";
-    const PLACEHOLDER_IMAGE = "https://via.placeholder.com/700x700?text=Luary+Shop";
+    let WHATSAPP_NUMBER = ""; // definido em Conteúdo → Empresa; sem número, o botão de WhatsApp fica oculto
+    const PLACEHOLDER_IMAGE = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="700" height="700"><rect width="700" height="700" fill="#e9e4d9"/><text x="350" y="360" font-family="Georgia,serif" font-size="46" fill="#b28a4b" text-anchor="middle">luary</text></svg>');
     const CART_STORAGE_KEY = "luary-atacado-cart-v1";
 
     const app = initializeApp(firebaseConfig);
@@ -131,7 +142,9 @@
     const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[char]));
     const normalizeCategory = (value) => String(value || "Outros").trim().toUpperCase();
     const imageUrl = (image) => typeof image === "string" ? image : (image?.url || image?.src || "");
-    const productImages = (product) => (Array.isArray(product?.images) ? product.images.map(imageUrl).filter(Boolean) : []);
+    // só https ou caminho relativo do próprio site (nunca javascript:, data: ou http:)
+    const cleanImg = (u) => { const s = String(u || "").trim(); return /^https:\/\//i.test(s) || /^(?:\.\/|\/(?!\/)|public\/)/.test(s) ? s : ""; };
+    const productImages = (product) => (Array.isArray(product?.images) ? product.images.map(imageUrl).map(cleanImg).filter(Boolean) : []);
     const productPrice = (value) => {
       if (value === null || value === undefined || value === "") return null;
       const number = Number(value);
@@ -317,6 +330,7 @@
       const price = productPrice(priceInfo(activeProduct).final);
       const priceText = price === null ? "valor a confirmar" : currency(price);
       const message = `Olá! Tenho interesse no atacado Luary: ${sku} - ${activeProduct.name || "Peça"}. Quantidade: ${quantity}. Valor unitário informado: ${priceText}. Poderiam confirmar disponibilidade e condições?`;
+      $("modal-whatsapp-btn").hidden = !WHATSAPP_NUMBER;
       $("modal-whatsapp-btn").href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     }
 

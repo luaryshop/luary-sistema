@@ -21,6 +21,9 @@ export function normalizeSettings(raw = {}) {
     freeShippingFrom: Math.max(0, num(raw.freeShippingFrom)),
     minOrder: Math.max(0, num(raw.minOrder)),
     defaultMinQty: Math.max(1, Math.min(999, Math.trunc(num(raw.defaultMinQty)) || 1)),
+    payments: (() => { const on = PAYMENT_METHODS.filter((m) => (m === "PIX" ? raw.payPix : m === "Cartão" ? raw.payCard : raw.payLater) !== false); return on.length ? on : ["A combinar"]; })(),
+    cardNote: String(raw.cardNote || "").trim().slice(0, 120),
+    cardInstallments: Math.max(0, Math.min(24, Math.trunc(num(raw.cardInstallments)) || 0)),
     storeName: String(raw.companyName || "Luary Shop").trim() || "Luary Shop",
     whatsapp: normalizePhone(raw.whatsapp),
   };

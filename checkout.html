@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex, nofollow"><meta name="theme-color" content="#23384a">
 <title>Finalizar pedido | Luary Shop</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -107,9 +109,13 @@ function renderSummary() {
 
 function renderPayments() {
   const pix = store.settings.pixDiscount;
-  const opts = { "PIX": pix > 0 ? `${pix}% de desconto` : "Pagamento à vista", "Cartão": "Condições no atendimento", "A combinar": "Definimos juntos" };
-  const current = document.querySelector('input[name="payment"]:checked')?.value || "PIX";
-  $("pay").innerHTML = PAYMENT_METHODS.map((m, i) => `<label><input type="radio" name="payment" value="${esc(m)}" ${current === m ? "checked" : ""}><b>${esc(m)}</b><small>${esc(opts[m])}</small></label>`).join("");
+  const st = store.settings;
+  const cardText = st.cardNote || (st.cardInstallments > 1 ? `Em até ${st.cardInstallments}x — link de pagamento pelo WhatsApp` : "Link de pagamento ou maquininha, combinado no atendimento");
+  const opts = { "PIX": pix > 0 ? `${pix}% de desconto` : "Pagamento à vista", "Cartão": cardText, "A combinar": "Definimos juntos" };
+  const enabled = st.payments;
+  const checked = document.querySelector('input[name="payment"]:checked')?.value;
+  const current = enabled.includes(checked) ? checked : enabled[0];
+  $("pay").innerHTML = PAYMENT_METHODS.filter((m) => enabled.includes(m)).map((m, i) => `<label><input type="radio" name="payment" value="${esc(m)}" ${current === m ? "checked" : ""}><b>${esc(m === "Cartão" ? "Cartão de crédito/débito" : m)}</b><small>${esc(opts[m])}</small></label>`).join("");
 }
 
 function toggleDelivery() {

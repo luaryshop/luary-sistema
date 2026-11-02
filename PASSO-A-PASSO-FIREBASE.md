@@ -41,3 +41,57 @@ Em **Authentication → Settings → Domínios autorizados**, confirme `luarysho
 6. Teste a prévia: cole o link de um produto no WhatsApp, ou use https://developers.facebook.com/tools/debug/ (clique em "Coletar novamente" após mudanças).
 
 Observações: o GitHub Pages de projeto (`usuario.github.io/projeto`) só aceita `robots.txt` na raiz do domínio; com domínio próprio ele passa a valer. Fotos em WebP podem não aparecer em algumas redes — por isso a imagem padrão é JPG; para a prévia de produtos, prefira também publicar uma versão JPG da foto principal.
+
+---
+
+## 8. Segurança e publicação (Fase 7)
+
+### Antes de publicar
+1. Troque o e-mail de exemplo em `firestore.rules` (`SEU_EMAIL_ADMIN@exemplo.com`) pelo e-mail do seu login do painel (pode listar mais de um, separados por vírgula).
+2. Firebase → Firestore → **Regras** → cole o arquivo → **Simulador de regras** → faça estes testes antes de **Publicar**:
+   | Teste | Esperado |
+   |---|---|
+   | Ler `products/qualquer` sem login | permitido |
+   | Ler `siteSettings/public` sem login | permitido |
+   | Ler `siteSettings/outro` sem login | **negado** |
+   | Listar `orders` sem login | **negado** |
+   | Criar `orders/LUA-261101-ABCD` sem login, com os campos do pedido | permitido |
+   | Criar pedido com `status: "Aprovado"` | **negado** |
+   | Atualizar/excluir `orders/…` sem login | **negado** |
+   | Ler `promotions/cp_CODIGO` sem login (leitura por ID) | permitido |
+   | Listar `promotions` sem login, sem filtro | **negado** |
+   | Gravar em `products` sem login | **negado** |
+   | Gravar em `products` logado com o e-mail admin | permitido |
+   | Ler `adminLogs` sem login | **negado** |
+3. Firebase → **Authentication → Configurações → Ações do usuário**: desative **"Permitir criação (cadastro)"**. Sem isso, qualquer pessoa poderia criar uma conta usando a chave pública do site.
+4. Google Cloud Console → **APIs e serviços → Credenciais** → sua chave de API do navegador → **Restrições de aplicativos: Referenciadores HTTP** → adicione `https://luaryshop.github.io/*` (e seu domínio próprio, se houver).
+5. (Recomendado quando houver volume de pedidos) Firebase → **App Check** → registre o site com reCAPTCHA v3 e ative a imposição no Firestore, para barrar robôs que criam pedidos falsos.
+6. Cada administrador deve usar senha forte; ative verificação em duas etapas na conta Google do projeto.
+
+### Verificação automática (no seu computador)
+```
+npm install
+npx playwright install chromium
+npm run verify      # auditoria + checagem de arquivos + todos os testes
+```
+- `npm run audit` procura padrões perigosos no código (eval, links sem rel, segredos, handlers inline com dados).
+- `npm run check` confere arquivos referenciados, noindex nas páginas internas, CSP nas páginas públicas e pendências (e-mail de exemplo nas regras etc.).
+- `npm test` roda a suíte completa (~330 verificações), incluindo testes de injeção de HTML/JS em todos os campos.
+- No GitHub, o arquivo `.github/workflows/ci.yml` roda tudo isso a cada envio.
+
+### Rotina
+- **Backup:** Conteúdo → *Backup e histórico* → baixe um backup semanal (e antes de reajustes de preço em massa). O arquivo com pedidos contém dados pessoais de clientes: guarde com cuidado.
+- **Histórico:** a mesma aba mostra quem alterou o quê (preços em massa, exclusões, promoções, backups).
+- **Pedidos:** os valores são calculados no navegador do cliente; confira sempre o pedido antes de aprovar.
+
+### Limites conhecidos
+- As regras do Firestore não conseguem recalcular o preço do pedido; a conferência é humana.
+- Não há limite de pedidos por visitante sem o App Check.
+- As telas do painel usam o Tailwind por CDN (sem CSP rígida); as páginas públicas (loja, carrinho e checkout) têm CSP.
+
+---
+
+## 9. Fotos 1:1 e formas de pagamento
+- **Fotos:** em `cdn.html`, o campo **Enquadramento** vem em *Automático*: produtos, categorias e subcategorias saem quadrados (1:1) com a foto inteira sobre fundo branco (a cor pode ser trocada); home e identidade mantêm a proporção. Para fotos já publicadas, abra o SKU e clique em **Padronizar fotos atuais em 1:1** e depois em **Publicar na CDN**.
+- **Loja:** os cards, o modal, as miniaturas e o carrinho exibem a foto inteira em caixa quadrada, sem cortar, em desktop, tablet e celular.
+- **Pagamento:** em **Conteúdo → Empresa e Identidade → Formas de pagamento no checkout**, ligue/desligue PIX, Cartão e "A combinar", defina o máximo de parcelas e o texto do cartão. Clique em **Salvar dados**.

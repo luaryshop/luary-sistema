@@ -24,6 +24,7 @@
 <button data-tab="taxonomy" class="tab rounded-lg px-4 py-2 bg-white border">Categorias</button>
 <button data-tab="promotions" class="tab rounded-lg px-4 py-2 bg-white border">Promoções e cupons</button>
 <button data-tab="prices" class="tab rounded-lg px-4 py-2 bg-white border">Preços em massa</button>
+<button data-tab="backup" class="tab rounded-lg px-4 py-2 bg-white border">Backup e histórico</button>
 <button data-tab="export" class="tab rounded-lg px-4 py-2 bg-white border">Imagens (CDN)</button>
 </nav>
 <section id="panel-company" class="panel bg-white rounded-2xl shadow-sm border p-5">
@@ -41,6 +42,9 @@
 <div class="md:col-span-2 mt-2 border-t pt-4"><h3 class="font-semibold">Pedido, frete e pagamento</h3><p class="text-xs text-slate-500">Valem para o carrinho e o checkout da loja. Deixe em branco para desligar.</p></div>
 <label class="text-sm">Pedido mínimo (R$)<input name="minOrder" type="number" min="0" step="0.01" class="field" placeholder="Ex.: 150"></label>
 <label class="text-sm">Desconto no PIX (%)<input name="pixDiscount" type="number" min="0" max="90" step="0.1" class="field" placeholder="Ex.: 5"></label>
+<div class="md:col-span-2 rounded-xl border p-3"><div class="font-semibold text-sm mb-2">Formas de pagamento no checkout</div>
+<div class="flex flex-wrap gap-x-6 gap-y-2 text-sm"><label class="flex items-center gap-2"><input name="payPix" type="checkbox" checked> PIX (usa o desconto acima)</label><label class="flex items-center gap-2"><input name="payCard" type="checkbox" checked> Cartão de crédito/débito</label><label class="flex items-center gap-2"><input name="payLater" type="checkbox" checked> A combinar no atendimento</label></div>
+<div class="grid md:grid-cols-2 gap-3 mt-3"><label class="text-sm">Parcelamento no cartão (máx. parcelas)<input name="cardInstallments" type="number" min="0" max="24" step="1" class="field" placeholder="Ex.: 3 (em branco = não informar)"></label><label class="text-sm">Texto do cartão no checkout<input name="cardNote" maxlength="120" class="field" placeholder="Ex.: Até 3x sem juros — enviamos o link pelo WhatsApp"></label></div></div>
 <label class="text-sm">Quantidade mínima por SKU (un.)<input name="defaultMinQty" type="number" min="1" max="999" step="1" class="field" placeholder="Ex.: 6 (em branco = sem mínimo)"><span class="block text-xs text-slate-500 mt-1">Padrão para todos os produtos. Um produto pode ter mínimo próprio em Produtos.</span></label>
 <label class="text-sm">Frete fixo (R$)<input name="shippingFlat" type="number" min="0" step="0.01" class="field" placeholder="Em branco = a combinar"></label>
 <label class="text-sm">Frete grátis a partir de (R$)<input name="freeShippingFrom" type="number" min="0" step="0.01" class="field" placeholder="Ex.: 500"></label>
@@ -67,6 +71,19 @@
 <div><div class="text-xs font-semibold text-slate-500 mb-1">PRÉVIA NO WHATSAPP / FACEBOOK</div><div id="seo-prev-card" class="rounded-xl border overflow-hidden bg-slate-50 max-w-sm"></div></div>
 <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><b>Páginas de compartilhamento e sitemap</b><p class="mt-1">O WhatsApp e o Facebook não executam JavaScript, então a prévia de cada produto precisa de uma página própria. Gere o pacote, descompacte e envie as pastas/arquivos para a raiz do site no GitHub.</p><button type="button" id="seo-pack" class="save-btn mt-3">Baixar pacote SEO (.zip)</button><p id="seo-pack-msg" class="mt-2 text-xs"></p></div>
 </div></div></section>
+<section id="panel-backup" class="panel hidden bg-white rounded-2xl shadow-sm border p-5">
+<h2 class="font-bold text-lg mb-1">Backup e histórico</h2><p class="text-sm text-slate-500 mb-4">Guarde uma cópia das configurações e do catálogo e veja quem alterou o quê.</p>
+<div class="grid lg:grid-cols-2 gap-6">
+<div class="space-y-4">
+<div class="rounded-xl border p-4"><h3 class="font-semibold">Baixar backup</h3><p class="text-sm text-slate-500 mt-1">Empresa, banners, marketplaces, categorias, promoções e produtos em um arquivo .json.</p>
+<label class="flex items-center gap-2 text-sm mt-2"><input type="checkbox" id="bk-orders"> Incluir pedidos (contém dados pessoais de clientes — guarde com cuidado)</label>
+<button type="button" id="bk-download" class="save-btn mt-3">Baixar backup (.json)</button><p id="bk-msg" class="text-sm mt-2"></p></div>
+<div class="rounded-xl border p-4"><h3 class="font-semibold">Restaurar backup</h3><p class="text-sm text-slate-500 mt-1">Recria/atualiza os registros do arquivo pelo mesmo ID. Nada é excluído. Faça um backup novo antes.</p>
+<input type="file" id="bk-file" accept="application/json,.json" class="field"><div id="bk-preview" class="text-sm mt-2"></div>
+<button type="button" id="bk-restore" class="save-btn mt-3" disabled>Restaurar</button></div>
+</div>
+<div><h3 class="font-semibold mb-2">Últimas alterações</h3><div id="log-list" class="space-y-1 text-sm"></div><button type="button" id="log-reload" class="cancel-btn mt-3">Atualizar</button></div>
+</div></section>
 <section id="panel-marketplaces" class="panel hidden bg-white rounded-2xl shadow-sm border p-5">
 <h2 class="font-bold text-lg mb-1">Marketplaces e canais de venda</h2><p class="text-sm text-slate-500 mb-4">Canais exibidos na seção “Onde comprar” da vitrine (Shopee, Mercado Livre, etc.). O que for cadastrado, editado, desativado ou excluído aqui reflete na loja. Se nenhum canal estiver ativo, a seção some da vitrine.</p>
 <div id="market-seed" class="hidden mb-5 rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900"><b>A Shopee ainda não está cadastrada no painel.</b> Ela aparece na vitrine porque está fixa no código (modo de segurança). Cadastre-a para poder editar ou excluir.<div class="mt-3"><button type="button" id="seed-shopee" class="save-btn">Cadastrar Shopee no painel</button></div></div>
@@ -135,7 +152,7 @@
 <script type="module">
 import {initializeApp,getApps} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import {getFirestore,doc,getDoc,setDoc,collection,addDoc,getDocs,updateDoc,deleteDoc,writeBatch,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {getFirestore,doc,getDoc,setDoc,collection,addDoc,getDocs,updateDoc,deleteDoc,writeBatch,query,orderBy,limit,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import {buildMeta,buildSitemap,buildRobots,buildSharePage,normalizeSiteUrl,safeHttps,skuSlug} from "./seo.js";
 import {promoStatus,promoKind,appliesToProduct,discountedPrice,validatePromotion,parseSkus,norm,round2,brl} from "./pricing.js";
 const firebaseConfig={apiKey:"AIzaSyCanlMwdfuD9gmVt62nJYYetj4K2-BfWEc",authDomain:"luary-system.firebaseapp.com",projectId:"luary-system",storageBucket:"luary-system.firebasestorage.app",messagingSenderId:"996287172742",appId:"1:996287172742:web:4ff8c22a01cabe4015c107"};
@@ -146,10 +163,10 @@ const forms={banners:"banner-form",marketplaces:"market-form",categories:"catego
 let cache={categories:[],products:[],promotions:[]};
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".panel").forEach(p=>p.classList.add("hidden"));$("panel-"+b.dataset.tab).classList.remove("hidden");document.querySelectorAll(".tab").forEach(x=>x.className="tab rounded-lg px-4 py-2 bg-white border");b.className="tab rounded-lg px-4 py-2 bg-slate-900 text-white"}));
 function formData(form){const fd=new FormData(form),o={};for(const [k,v] of fd.entries())o[k]=v;form.querySelectorAll('input[type="checkbox"]').forEach(x=>o[x.name]=x.checked);form.querySelectorAll('input[type="number"]').forEach(x=>{if(x.value!=="")o[x.name]=Number(x.value)});return o}
-function fillForm(form,obj){for(const el of form.elements){if(!el.name)continue;if(el.type==="checkbox")el.checked=!!obj[el.name];else el.value=obj[el.name]??""}}
+function fillForm(form,obj){for(const el of form.elements){if(!el.name)continue;if(el.type==="checkbox")el.checked=obj[el.name]===undefined?el.defaultChecked:!!obj[el.name];else el.value=obj[el.name]??""}}
 function clearForm(id){$(id).reset();const h=$(id).querySelector('[name="id"]');if(h)h.value="";if($(id).elements.active)$(id).elements.active.checked=true}
-async function saveRecord(kind,formId){const f=$(formId),data=formData(f),id=data.id;delete data.id;data.updatedAt=serverTimestamp();if(id)await updateDoc(doc(db,collections[kind],id),data);else{data.createdAt=serverTimestamp();await addDoc(collection(db,collections[kind]),data)}clearForm(formId);await loadAll()}
-async function removeRecord(kind,id){if(!confirm("Excluir este registro? Esta ação não pode ser desfeita."))return;await deleteDoc(doc(db,collections[kind],id));await loadAll()}
+async function saveRecord(kind,formId){const f=$(formId),data=formData(f),id=data.id;delete data.id;data.updatedAt=serverTimestamp();if(id)await updateDoc(doc(db,collections[kind],id),data);else{data.createdAt=serverTimestamp();await addDoc(collection(db,collections[kind]),data)}await logAdmin(kind,`${id?"Editou":"Criou"} ${kind}: ${data.title||data.name||data.slug||""}`);clearForm(formId);await loadAll()}
+async function removeRecord(kind,id){if(!confirm("Excluir este registro? Esta ação não pode ser desfeita."))return;await deleteDoc(doc(db,collections[kind],id));await logAdmin(kind,`Excluiu ${kind} (${id})`);await loadAll()}
 function renderList(kind,records){const target=$(kind==="banners"?"banner-list":kind==="marketplaces"?"market-list":kind==="categories"?"category-list":kind==="subcategories"?"subcategory-list":"promotion-list");if(!records.length){target.innerHTML='<p class="text-sm text-slate-400">Nenhum registro cadastrado.</p>';return}const sorted=[...records].sort((a,b)=>(Number(a.position)||0)-(Number(b.position)||0));target.innerHTML=sorted.map(r=>{const detail=kind==="marketplaces"?(r.linkUrl||r.slug||""):(r.imageUrl||r.coupon||r.slug||"");const status=r.active===false?'<span class="ml-2 rounded bg-slate-200 px-2 py-0.5 text-xs text-slate-600">Inativo</span>':'<span class="ml-2 rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">Ativo</span>';return `<div class="item"><div class="min-w-0"><b>${esc(r.title||r.name||r.slug||"Registro")}</b>${status}<small class="truncate">${esc(detail)}</small></div><div class="flex shrink-0 gap-3"><button type="button" class="text-indigo-700" data-edit="${esc(r.id)}" data-kind="${kind}">Editar</button><button type="button" class="text-rose-600" data-delete="${esc(r.id)}" data-kind="${kind}">Excluir</button></div></div>`}).join("")}
 async function loadCollection(kind){const snap=await getDocs(collection(db,collections[kind]));const rows=snap.docs.map(d=>({id:d.id,...d.data()}));if(kind==="promotions"){cache.promotions=rows;renderPromotions(rows)}else renderList(kind,rows);if(kind==="banners")updateBannerSeed(rows);if(kind==="categories"){cache.categories=rows;$("category-select").innerHTML='<option value="">Selecione a categoria</option>'+rows.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}if(kind==="marketplaces")$("market-seed").classList.toggle("hidden",rows.some(r=>r.slug==="shopee"));return rows}
 async function loadAll(){for(const kind of Object.keys(collections))await loadCollection(kind);await loadProducts()}
@@ -229,9 +246,31 @@ function updateBannerSeed(rows){$("banner-seed").classList.toggle("hidden",rows.
 $("seed-hero").addEventListener("click",async()=>{try{const url=new URL("public/images/luary-hero.webp",window.__HERO_BASE||location.href).href;if(!isHttps(url)){alert("Abra o painel pelo endereço publicado (https://) para cadastrar a imagem atual do site.");return}await addDoc(collection(db,collections.banners),{title:"Imagem principal da home",imageUrl:url,linkUrl:"",alt:"Luary Shop",position:0,placement:"hero",active:true,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});await loadAll()}catch(err){console.error(err);alert("Não foi possível cadastrar a imagem. Verifique o login e as regras do Firestore.")}});
 $("seed-shopee").addEventListener("click",async()=>{try{await addDoc(collection(db,collections.marketplaces),{title:"Luary Shop na Shopee",slug:"shopee",linkUrl:"https://shopee.com.br/luaryshop",imageUrl:"",badge:"LOJA OFICIAL",ctaLabel:"Visitar loja",description:"Confira modelos, disponibilidade e condições de compra diretamente na loja oficial.",position:0,active:true,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});await loadAll();alert("Shopee cadastrada. Agora você pode editar ou excluir.")}catch(err){console.error(err);alert("Não foi possível cadastrar. Verifique as permissões do Firestore.")}});
 document.querySelectorAll("[data-cancel]").forEach(b=>b.addEventListener("click",()=>clearForm(b.dataset.cancel)));
-$("company-form").addEventListener("submit",async e=>{e.preventDefault();try{const data=formData(e.currentTarget);e.currentTarget.querySelectorAll('input[type="number"]').forEach(x=>{if(x.value==="")data[x.name]=0});await setDoc(doc(db,"siteSettings","public"),{...data,updatedAt:serverTimestamp()},{merge:true});alert("Dados da empresa salvos.");}catch(err){console.error(err);alert("Erro ao salvar configurações.");}});
+$("company-form").addEventListener("submit",async e=>{e.preventDefault();try{const data=formData(e.currentTarget);e.currentTarget.querySelectorAll('input[type="number"]').forEach(x=>{if(x.value==="")data[x.name]=0});await setDoc(doc(db,"siteSettings","public"),{...data,updatedAt:serverTimestamp()},{merge:true});await logAdmin("company","Atualizou dados da empresa");alert("Dados da empresa salvos.");}catch(err){console.error(err);alert("Erro ao salvar configurações.");}});
 let companyCache={};
 async function loadCompany(){const s=await getDoc(doc(db,"siteSettings","public"));if(s.exists()){companyCache=s.data();fillForm($("company-form"),companyCache);fillForm($("seo-form"),companyCache)}seoPreview()}
+// ===== Backup e histórico =====
+const BK_COLS=["banners","marketplaceGrids","categories","subcategories","promotions","products"];
+const ser=v=>v&&typeof v.toDate==="function"?{__ts:v.toDate().toISOString()}:Array.isArray(v)?v.map(ser):v&&typeof v==="object"?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,ser(x)])):v;
+const deser=v=>v&&typeof v==="object"&&!Array.isArray(v)?(typeof v.__ts==="string"&&Object.keys(v).length===1?new Date(v.__ts):Object.fromEntries(Object.entries(v).map(([k,x])=>[k,deser(x)]))):Array.isArray(v)?v.map(deser):v;
+let bkPending=null;
+$("bk-download").addEventListener("click",async()=>{const msg=$("bk-msg");try{msg.textContent="Gerando…";const out={format:"luary-backup",version:1,createdAt:new Date().toISOString(),by:auth.currentUser?.email||"",collections:{}};
+ const s=await getDoc(doc(db,"siteSettings","public"));out.collections.siteSettings=s.exists()?[{id:"public",data:ser(s.data())}]:[];
+ const cols=[...BK_COLS,...($("bk-orders").checked?["orders"]:[])];
+ for(const c of cols){const snap=await getDocs(collection(db,c));out.collections[c]=snap.docs.map(d=>({id:d.id,data:ser(d.data())}))}
+ const blob=new Blob([JSON.stringify(out,null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`luary-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+ const n=Object.values(out.collections).reduce((a,x)=>a+x.length,0);msg.textContent=`Backup gerado com ${n} registro(s).`;window.__BACKUP=out;await logAdmin("backup",`Baixou backup (${n} registros${$("bk-orders").checked?", com pedidos":""})`)}catch(err){console.error(err);msg.textContent="Erro ao gerar o backup."}});
+$("bk-file").addEventListener("change",async e=>{bkPending=null;$("bk-restore").disabled=true;const f=e.target.files[0];if(!f)return;try{if(f.size>20e6)throw new Error("grande");const j=JSON.parse(await f.text());
+ if(j.format!=="luary-backup"||j.version!==1||!j.collections||typeof j.collections!=="object")throw new Error("formato");
+ const allowed=["siteSettings",...BK_COLS,"orders"];const cols={};for(const [c,rows] of Object.entries(j.collections)){if(!allowed.includes(c))continue;if(!Array.isArray(rows)||rows.some(r=>!r||typeof r.id!=="string"||!/^[A-Za-z0-9_-]{1,100}$/.test(r.id)||typeof r.data!=="object"))throw new Error("registros");cols[c]=rows}
+ bkPending=cols;$("bk-preview").innerHTML="Arquivo de "+esc(String(j.createdAt||"").slice(0,10))+": "+Object.entries(cols).map(([c,r])=>`<b>${esc(c)}</b> ${r.length}`).join(" · ");$("bk-restore").disabled=!Object.keys(cols).length}catch(err){$("bk-preview").innerHTML='<span class="text-rose-600">Arquivo inválido: não é um backup da Luary.</span>'}});
+$("bk-restore").addEventListener("click",async()=>{if(!bkPending||!confirm("Restaurar este backup? Registros com o mesmo ID serão sobrescritos. Nada será excluído."))return;try{
+ const ops=Object.entries(bkPending).flatMap(([c,rows])=>rows.map(r=>[c,r.id,deser(r.data)]));
+ for(let i=0;i<ops.length;i+=400){const b=writeBatch(db);ops.slice(i,i+400).forEach(([c,id,data])=>b.set(doc(db,c,id),data));await b.commit()}
+ await logAdmin("backup",`Restaurou backup (${ops.length} registros)`);bkPending=null;$("bk-restore").disabled=true;$("bk-file").value="";$("bk-preview").textContent="";await loadAll();await loadCompany();alert(`Backup restaurado: ${ops.length} registro(s).`);loadLogs()}catch(err){console.error(err);alert("Não foi possível restaurar. Verifique o login e as regras do Firestore.")}});
+async function loadLogs(){try{const snap=await getDocs(query(collection(db,"adminLogs"),orderBy("at","desc"),limit(50)));const rows=snap.docs.map(d=>d.data());
+ $("log-list").innerHTML=rows.length?rows.map(r=>`<div class="rounded-lg border px-3 py-2"><div class="text-xs text-slate-500">${esc(fmtDate(r.at)||"agora")} · ${esc(r.user||"—")}</div><div>${esc(r.summary||r.type||"")}</div></div>`).join(""):'<p class="text-slate-400">Nenhuma alteração registrada ainda.</p>'}catch(err){console.warn(err);$("log-list").innerHTML='<p class="text-rose-600">Não foi possível carregar o histórico.</p>'}}
+$("log-reload").addEventListener("click",loadLogs);document.querySelector('[data-tab=backup]').addEventListener("click",loadLogs);
 // ===== SEO e redes sociais =====
 const seoSettingsNow=()=>({...companyCache,...formData($("seo-form"))});
 function seoPreview(){const st=seoSettingsNow(),m=buildMeta({kind:"home",settings:st}),f=$("seo-form").elements;
@@ -242,7 +281,7 @@ $("seo-form").addEventListener("input",seoPreview);
 $("seo-form").addEventListener("submit",async e=>{e.preventDefault();const f=$("seo-form").elements;
  if(f.siteUrl.value&&!safeHttps(f.siteUrl.value)){alert("O endereço da loja deve começar com https://");return}
  if(f.ogImage.value&&!safeHttps(f.ogImage.value)){alert("A imagem de compartilhamento deve ser uma URL https://");return}
- try{const data=formData($("seo-form"));if(data.siteUrl)data.siteUrl=normalizeSiteUrl(data.siteUrl);await setDoc(doc(db,"siteSettings","public"),{...data,updatedAt:serverTimestamp()},{merge:true});Object.assign(companyCache,data);fillForm($("seo-form"),companyCache);seoPreview();alert("SEO salvo.")}catch(err){console.error(err);alert("Erro ao salvar. Verifique o login e as regras do Firestore.")}});
+ try{const data=formData($("seo-form"));if(data.siteUrl)data.siteUrl=normalizeSiteUrl(data.siteUrl);await setDoc(doc(db,"siteSettings","public"),{...data,updatedAt:serverTimestamp()},{merge:true});await logAdmin("seo","Atualizou SEO e redes sociais");Object.assign(companyCache,data);fillForm($("seo-form"),companyCache);seoPreview();alert("SEO salvo.")}catch(err){console.error(err);alert("Erro ao salvar. Verifique o login e as regras do Firestore.")}});
 $("seo-pack").addEventListener("click",async()=>{const msg=$("seo-pack-msg");try{
  if(!window.JSZip){alert("Não foi possível carregar o gerador de .zip. Verifique a conexão e recarregue a página.");return}
  msg.textContent="Gerando…";const st=seoSettingsNow();st.siteUrl=normalizeSiteUrl(st.siteUrl);
